@@ -1,0 +1,300 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/repositories",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "stars:>1000"
+            },
+            {
+              "name": "sort",
+              "value": "stars"
+            },
+            {
+              "name": "order",
+              "value": "desc"
+            },
+            {
+              "name": "per_page",
+              "value": "20"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        128,
+        48
+      ],
+      "id": "eb96a156-f131-4116-90bb-c053a8e95550",
+      "name": "HTTP Request",
+      "onError": "continueErrorOutput",
+      "notes": "⚠️ GitHub Morning Brief workflow encountered an API error.\n\nPlease check the n8n execution details."
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json.owner}}/{{$json.repo}}/readme",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        48
+      ],
+      "id": "01dd91dc-a307-4e7f-9abc-fe2c9032fa97",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst repoItems = $(\"Select Top 5\").all();\nconst readmeItems = $input.all();\n\nconst repositories = repoItems.map((item, index) => {\n  const readme = readmeItems[index]?.json || {};\n\n  return {\n    ...item.json,\n    readme: {\n      name: readme.name || \"README unavailable\",\n      path: readme.path || \"\",\n      html_url: readme.html_url || \"\",\n      download_url: readme.download_url || \"\"\n    }\n  };\n});\n\nconst topRepo = repositories[0];\n\nconst report = repositories.map(repo =>\n  `${repo.rank}. ${repo.name} - ${repo.stars} stars\n${repo.description}\n${repo.url}`\n).join(\"\\n\\n\");\n\nconst message =\n  `🚀 GitHub Morning Brief\\n\\n${report}\\n\\n` +\n  `Top repository README: ${topRepo.readme.html_url || \"Unavailable\"}`;\n\nreturn [{\n  json: {\n    topRepo,\n    repositories,\n    repositoryCount: repositories.length,\n    message\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        48
+      ],
+      "id": "15c2f49e-0848-428f-9dda-8da59c1079be",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst response = $input.first().json;\n\nconst repositories = response.items || [];\n\nconst topFive = repositories\n  .sort((a, b) => b.stargazers_count - a.stargazers_count)\n  .slice(0, 5);\n\nreturn topFive.map((repo, index) => ({\n  json: {\n    rank: index + 1,\n    name: repo.full_name,\n    description: repo.description || \"No description available\",\n    stars: repo.stargazers_count,\n    url: repo.html_url,\n    owner: repo.owner.login,\n    repo: repo.name\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        48
+      ],
+      "id": "48f45f1b-9a76-41ae-bab1-999b4eaf25ac",
+      "name": "Select Top 5",
+      "onError": "continueErrorOutput",
+      "notes": "⚠️ GitHub Morning Brief workflow encountered an API error.\n\nPlease check the n8n execution details."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "bfccc5ce-0a37-4f95-b71c-d37120b2986a",
+              "leftValue": "={{ $json.topRepo.stars }}",
+              "rightValue": 999999999,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        784,
+        48
+      ],
+      "id": "cd0494db-c2d5-46ed-8442-c4963d7103e3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "8845895059",
+        "text": "=\t{{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        -48
+      ],
+      "id": "e5bb069b-0ba5-4758-9bd4-9778c2bfb455",
+      "name": "Send a text message",
+      "webhookId": "2f81fedb-f361-4cb6-b2aa-38308ed1c04e",
+      "credentials": {
+        "telegramApi": {
+          "id": "gsyTAF9IT2C0Jxj3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f2588318-acc8-40e7-97bc-17c84f2fd5b1",
+      "name": "Telegram Trigger",
+      "webhookId": "0651ac0c-68ec-4ecc-845c-6092e1303712",
+      "credentials": {
+        "telegramApi": {
+          "id": "gsyTAF9IT2C0Jxj3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "=8845895059",
+        "text": "=ℹ️ GitHub Morning Brief  The top repository currently has fewer than 1,000 stars.  {{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        144
+      ],
+      "id": "a0b0a984-208c-4050-868b-ca0d93542ecb",
+      "name": "Send a text message1",
+      "webhookId": "b5bc9df2-e6ea-4565-a55a-efc3a3554012",
+      "credentials": {
+        "telegramApi": {
+          "id": "gsyTAF9IT2C0Jxj3",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Select Top 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Top 5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "3f2962ec-4a73-4f59-8bf1-e16a0b9d0379",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9274776996d20d1e2f46fbf4ed9bbc7a7f6f1c6447c55c3b24b5d694e3b9259a"
+  },
+  "nodeGroups": [],
+  "id": "lRWi4VKLLszleuwZ",
+  "tags": []
+}
