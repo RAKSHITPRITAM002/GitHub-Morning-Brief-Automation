@@ -4,7 +4,7 @@ Tools and APIs Used
 
 n8n: Workflow automation platform.
 
-GitHub REST API – Search Repositories: Retrieves repositories with more than 1,000 stars.
+GitHub REST API – Search Repositories: Retrieves repositories with more than 10,000 stars.
 
 GitHub REST API – Get Repository README: Retrieves README information for the selected repositories.
 
@@ -30,7 +30,7 @@ Conditional Logic
 
 True branch: Runs when the top repository has 1,000 or more stars.
 
-False branch: Runs when the top repository has fewer than 1,000 stars.
+False branch: Runs when the top repository has fewer than 10,000 stars.
 
 Both branches send a Telegram notification.
 
