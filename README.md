@@ -22,7 +22,7 @@ HTTP Request – Get README: Retrieves README information for each selected repo
 
 Code – Prepare Report: Combines repository details and README links into a readable summary.
 
-IF Condition: Checks whether the top repository has at least 1,000 stars.
+IF Condition: Checks whether the top repository has at least 1,0000 stars.
 
 Telegram Notification: Sends the report through Telegram using separate True and False branches.
 
